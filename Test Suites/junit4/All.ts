@@ -12,7 +12,7 @@
    <rerunImmediately>false</rerunImmediately>
    <testSuiteGuid>544b0aed-7ba1-4dcf-a288-6c5ff6e8d977</testSuiteGuid>
    <testCaseLink>
-      <guid>78a14566-b5b0-4b9e-b992-4e87763fe67a</guid>
+      <guid>478efdb5-1156-40f9-9acd-9d5ffda29268</guid>
       <isReuseDriver>false</isReuseDriver>
       <isRun>true</isRun>
       <testCaseId>Test Cases/junit4/com.kazurayam.ks.importtestcasesintoexcel/ZipperTestRunner</testCaseId>

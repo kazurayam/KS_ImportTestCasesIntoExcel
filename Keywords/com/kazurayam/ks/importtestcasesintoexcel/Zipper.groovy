@@ -11,21 +11,39 @@ import org.apache.poi.hssf.usermodel.HSSFSheet
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 
 import com.kazurayam.ant.DirectoryScanner
+import com.kms.katalon.core.testcase.TestCase
+import com.kms.katalon.core.configuration.RunConfiguration
 
 public class Zipper {
 
-	private String baseDir = "Scripts"
-	
-	private String[] includes
-	
+	private Path baseDir = Paths.get(RunConfiguration.getProjectDir()).toAbsolutePath()
+
+	private List<String> includePatterns
+
 	private String xlsx
+	
+	private static final int SHEET_NAME_MAX_LENGTH = 29
 
 	Zipper(String xlsx) {
-		this(["**/*.groovy"], xlsx)
+		init(["**"], xlsx)
 	}
-	
-	Zipper(String[] includes, String xlsx) {		
-		this.includes = includes
+
+	Zipper(List<TestCase> testCases, String xlsx) {
+		List<String> list = new ArrayList<>()
+		for (TestCase tc in testCases) {
+			String tcId = tc.getTestCaseId().replace("Test Cases/", "")
+			list.add(tcId)
+		}
+		init(list, xlsx)
+	}
+
+	private init(List<String> testCaseIds, String xlsx) {
+		this.includePatterns = new ArrayList<>()
+		for (String s in testCaseIds) {
+			if (s.length() > 0) {
+				this.includePatterns.add("Scripts/" + s + "/**/*.groovy")
+			}
+		}
 		this.xlsx = xlsx
 	}
 
@@ -33,17 +51,17 @@ public class Zipper {
 		HSSFWorkbook workbook = new HSSFWorkbook()
 		//
 		DirectoryScanner ds = new DirectoryScanner()
-		ds.setBasedir(this.baseDir)
-		ds.setIncludes(this.includes)
+		ds.setBasedir(this.baseDir.toString())
+		ds.setIncludes(this.includePatterns.toArray(new String[0]))
 		ds.scan()
 		String[] groovyFiles = ds.getIncludedFiles()
 		println "baseDir: " + this.baseDir
-		println "includes: " + this.includes
+		println "includePatterns: " + this.includePatterns
 		println "number of files: " + groovyFiles.length
 		for (int i = 0; i < groovyFiles.length; i++) {
-			Path p = Paths.get(baseDir).resolve(Paths.get(groovyFiles[i]))
+			Path p = baseDir.resolve(Paths.get(groovyFiles[i]))
 			println p
-			HSSFSheet spreadSheet = workbook.createSheet(resolveTestCaseId(p))
+			HSSFSheet spreadSheet = workbook.createSheet(toSheetName(p))
 			importScriptIntoSheet(p, spreadSheet)
 		}
 		//
@@ -51,8 +69,8 @@ public class Zipper {
 	}
 
 	private void importScriptIntoSheet(Path p, HSSFSheet spreadSheet) {
-		BufferedReader br = 
-			new BufferedReader(new InputStreamReader(p.newInputStream(), StandardCharsets.UTF_8))
+		BufferedReader br =
+				new BufferedReader(new InputStreamReader(p.newInputStream(), StandardCharsets.UTF_8))
 		String line
 		int ln = 0
 		while((line = br.readLine()) != null) {
@@ -74,8 +92,14 @@ public class Zipper {
 		baOut.close()
 		fOut.close()
 	}
-	
-	private String resolveTestCaseId(Path groovyFile) {
-		return groovyFile.getParent().toString().replaceAll("Scripts/","").replaceAll("/","／")
+
+	private String toSheetName(Path groovyFile) {
+		Path relativePath = this.baseDir.relativize(groovyFile)
+		Path parentDir = relativePath.getParent()
+		String s = parentDir.toString().replaceAll("Scripts/", "")
+		if (s.length() > SHEET_NAME_MAX_LENGTH) {
+			s = parentDir.getFileName().toString().replaceAll("Scripts/", "")
+		}
+		return s.replaceAll("/","／")
 	}
 }
